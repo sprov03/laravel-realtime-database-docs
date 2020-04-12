@@ -100,29 +100,30 @@ abstract class TestCase extends BaseTestCase
 ```
 
 ### Setup Your Client Store
-Each store will get its own file in the ClientStores Directory.  This can be modified in config/client-store.php
+Each store will get its own file in the ClientStores Directory.  This can be modified in config/client-store.php if the directory is taken for something else already.
+The following is provided during the publishing of the assets.  You dont need to register the stores, simply put them in the root fo the
+ClientStores Directory and Have the Class End with Store and extend the ClientStoreBase Class.  This will create a users Store with a single property of users.
 ```php
-File: app/ClientStores/AccountStore.php
+File: app/ClientStores/UsersStore.php
 
 <?php
 
 namespace App\ClientStores;
 
 use Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreBase;
-use App\Models\Account;
-use App\Resources\AccountStoreAccountResource;
+use App\Resources\UsersStoreUsersPropertyResource;
+use App\User;
 
-class AccountStore extends ClientStoreBase
+class UsersStore extends ClientStoreBase
 {
-    public static function accountProperty(int $account_id)
+    public static function usersProperty(int $user_id)
     {
-        return self::single($account_id,
-            Account::query()->where('id', '=', $account_id),
-            AccountStoreAccountResource::class,
+        return self::single($user_id,
+            User::query()->where('id', '=', $user_id),
+            UsersStoreUsersPropertyResource::class
         );
     }
 }
-
 ```
 
 
@@ -134,13 +135,18 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use ClientStoreModelTrait;
     use Notifiable;
 
+    /** Use the Client Store Trait */
+    use ClientStoreModelTrait;
+
+    /**
+     * Define the client store propertyes that need to be updated when the model is updated.
+     */
     public function getStoreProperties()
     {
         return [
-            AccountStore::accountProperty($this->id),
+            UsersStore::usersProperty($this->id),
         ];
     }
 
@@ -152,7 +158,11 @@ Now all of your api changes will automatically update the client State if it app
 
 ### install the client library
 ```shell
-npm install laravel-realtime-databaes-vuex
+npm install laravel-realtime-databaes-vuex pusher-js vuex axios --save
+
+or
+
+yarn add laravel-realtime-databaes-vuex pusher-js vuex axios
 
 ```
 
@@ -160,30 +170,50 @@ npm install laravel-realtime-databaes-vuex
 ```js
 File:  main.js
 
-import RealtimeStore from "akceli-realtime-store-npm";
+import Vuex from 'vuex';
+import RealtimeStore from "laravel-realtime-databaes-vuex";
 import Pusher from "pusher-js";
+
+Vue.use(Vuex);
+const store = new Vuex.Store({
+  strict: process.env.NODE_ENV !== 'production',
+  state: {},
+  mutations: {
+    ...RealtimeStore.channelMutations,
+  }
+});
 
 // store: is the Vuex Store that you pass to your Vue instance
 RealtimeStore.init(Vue, store, new Pusher(process.env.MIX_PUSHER_APP_KEY, {cluster: 'us2', forceTLS: true}));
+new Vue({
+  store,
+  render: h => h(App),
+}).$mount('#app');
+
 
 ```
 
 ### Javascript code to handle the response
-This will allow for any changes that are made during your requests to imediatly update the client store, instead of waiting for pusher to push the changes out.
+Create a http.js file and use this for all api calls.  This will allow you to apply middle ware throwout your app, Which
+we need in order to immediately update the client store, instead of waiting for pusher to push the changes out.
 ```javascript
+File: http.js
+
 // Http Middle Ware
+import axios from 'axios/index';
+import RealtimeStore from "laravel-realtime-databaes-vuex";
+
 function http() {
-  // This is just here for an example
   const httpInstance = axios.create({
     baseURL: process.env.MIX_BASE_API_URL,
-    headers: {'Authorization': `Bearer ${LocalStorageService.getApiToken()}`}
+    //headers: {'Authorization': `Bearer ${LocalStorageService.getApiToken()}`}
   });
-
+  
   httpInstance.interceptors.response.use(
     response => successHandler(response),
     error => errorHandler(error),
   );
-
+  
   return httpInstance;
 }
 
@@ -195,28 +225,19 @@ const successHandler = (response) => {
 
 const errorHandler = (error) => {
   error = RealtimeStore.apiErrorMiddleware(error);
-
+  
   return Promise.reject({ ...error })
 };
 
-```
-
-#### Vuex Store
-```js
-import RealtimeStore from "akceli-realtime-store-npm";
-
-//  Vue.js Mutations
-const mutations = {
-  ...RealtimeStore.channelMutations,
-}
+export default http;
 
 ```
 
-## Api Usage
-This is how you can directly query the store if you need to.
+
+## Direct Api Usage, only good for querying
 
 ```javascript
-API:  client_store/{store}/{store_id}/{property}/{id}?page=2&size=5&offset=20&after=12&after_column=id
+API:  api/client-store/{store}/{store_id}/{property}/{id}?page=2&size=5&offset=20&after=12&after_column=id
     * store: the client store
     * store_id:  the id of the store (channel_id)
     * property: property  (you can retrieve this info threw paginatino query)
