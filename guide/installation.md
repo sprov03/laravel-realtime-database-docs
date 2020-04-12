@@ -183,7 +183,6 @@ const store = new Vuex.Store({
   }
 });
 
-// store: is the Vuex Store that you pass to your Vue instance
 RealtimeStore.init(Vue, store, new Pusher(process.env.MIX_PUSHER_APP_KEY, {cluster: 'us2', forceTLS: true}));
 new Vue({
   store,
