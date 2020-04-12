@@ -14,16 +14,10 @@ for any javascript framework, using the Vue package as a guide if you are using 
 ## Installation
 
 ####  Laravel Installation
-Require the composer package
+Require the composer package and Publish the assets
 ```shell script
-// TODO: Change this to be akceli/laravel-realtime-database
-composer require akceli/realtime-client-store-sync
-```
-
-### Publish Assets
-Publish the Akceli\RealtimeClientStoreSync\ServiceProvider
-```bash
-php artisan vendor:publish
+composer require akceli/laravel-realtime-database
+php artisan vendor:publish --provider="Akceli\RealtimeClientStoreSync\ServiceProvider"
 
 ```
 
@@ -50,15 +44,22 @@ File: app/Http/Kernel.php
 ```php
 File: routes/api.php
 
-// Dont forget include the Store api
-\Akceli\RealtimeClientStoreSync\ClientStore\ClientStoreController::apiRoutes();
+Route::middleware(['auth:api'])->group(function () {
+    // This registers the Client Store Endpoint
+    Route::prefix('client-store')->group(function () {
+        ClientStoreController::apiRoutes();
+    });
 
-// Dont forget to add the middleware to the api routes
-Route::middleware(['auth:api', 'client-store'])->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    /**
+     * All routes that will use the Client Store Middleware
+     */
+    Route::middleware('client-store')->group(function () {
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
     });
 });
+
 
 
 ```
@@ -66,7 +67,7 @@ Route::middleware(['auth:api', 'client-store'])->group(function () {
 ### Env
 ```dotenv
 # Client Store
-CLIENT_STORE_URL=v1/client_store
+CLIENT_STORE_URL=api/client-store
 MIX_CLIENT_STORE_URL="${CLIENT_STORE_URL}"
 
 ```
