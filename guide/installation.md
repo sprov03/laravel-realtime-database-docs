@@ -158,11 +158,11 @@ Now all of your api changes will automatically update the client State if it app
 
 ### install the client library
 ```shell
-npm install laravel-realtime-databaes-vuex pusher-js vuex axios --save
+npm install laravel-realtime-database-vuex pusher-js vuex axios --save
 
 or
 
-yarn add laravel-realtime-databaes-vuex pusher-js vuex axios
+yarn add laravel-realtime-database-vuex pusher-js vuex axios
 
 ```
 
