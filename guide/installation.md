@@ -201,7 +201,7 @@ File: http.js
 
 // Http Middle Ware
 import axios from 'axios/index';
-import RealtimeStore from "laravel-realtime-databaes-vuex";
+import RealtimeStore from "laravel-realtime-database-vuex";
 
 function http() {
   const httpInstance = axios.create({
