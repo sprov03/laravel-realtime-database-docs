@@ -171,7 +171,7 @@ yarn add laravel-realtime-database-vuex pusher-js vuex axios
 File:  main.js
 
 import Vuex from 'vuex';
-import RealtimeStore from "laravel-realtime-databaes-vuex";
+import RealtimeStore from "laravel-realtime-database-vuex";
 import Pusher from "pusher-js";
 
 Vue.use(Vuex);
@@ -184,6 +184,7 @@ const store = new Vuex.Store({
 });
 
 RealtimeStore.init(Vue, store, new Pusher(process.env.MIX_PUSHER_APP_KEY, {cluster: 'us2', forceTLS: true}));
+
 new Vue({
   store,
   render: h => h(App),
